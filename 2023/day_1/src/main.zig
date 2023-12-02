@@ -30,10 +30,10 @@ pub fn main() !void {
     defer allocator.free(data);
 
     const part_1_res = try part1(data);
-    print("part 1: {d}\n", .{part_1_res});
+    print("part 1: {d}\n", .{part_1_res}); // correct answer: 54597
 
     // data
-    const part_2_res = try part2();
+    const part_2_res = try part2(data);
     print("part 2: {d}\n", .{part_2_res});
 }
 
@@ -46,33 +46,29 @@ pub fn readInput(allocator: std.mem.Allocator, file_name: []const u8) ![]const u
     const bytes_read = try data_file.readAll(buffer);
     assert(bytes_read == data_file_stats.size);
 
-    // print("{s}", .{buffer});
-    // print("bytes read: {any}\n", .{bytes_read});
     return buffer;
 }
 
 fn part1(data: []const u8) !u64 {
+    // use optionals here (?) instead of out of bounds number
     var first_digit: u32 = 1000;
     var last_digit: u32 = 1000;
     var acc: u32 = 0;
     for (0..data.len, data) |i, c| {
         if (std.ascii.isDigit(c)) {
             if (first_digit > 9) {
-                // assert(last_digit == undefined);
                 first_digit = strToDigit(c);
-                // print("first digit: {d}\n", .{first_digit});
             } else {
                 last_digit = strToDigit(c);
-                // print("last digit: {d}\n", .{last_digit});
             }
         }
+        // can use std.mem.splitScalar here to split by newline
         if (c == '\n' or i == (data.len - 1)) {
             if (last_digit > 9) {
                 last_digit = first_digit;
             }
-            const calibration_value = intConcat(first_digit, last_digit);
-            // print("concatted: {d}\n", .{calibration_value});
 
+            const calibration_value = intConcat(first_digit, last_digit);
             acc += calibration_value;
 
             first_digit = 1000;
@@ -96,46 +92,30 @@ test "part 1" {
     try std.testing.expectEqual(@as(u64, 142), res);
 }
 
-// data: []const u8
-fn part2() !u64 {
-    // var first_digit: u32 = 1000;
-    // var last_digit: u32 = 1000;
-    for (digit_words) |dw| {
-        print("{s}\n", .{dw});
-    }
+fn part2(data: []const u8) !u64 {
     var acc: u64 = 0;
-    // for (0..data.len, data) |i, c| {
-    //     if (std.ascii.isDigit(c)) {
-    //         if (first_digit > 9) {
-    //             // assert(last_digit == undefined);
-    //             first_digit = strToDigit(c);
-    //             // print("first digit: {d}\n", .{first_digit});
-    //         } else {
-    //             last_digit = strToDigit(c);
-    //             // print("last digit: {d}\n", .{last_digit});
-    //         }
-    //     }
-    //     if (c == '\n' or i == (data.len - 1)) {
-    //         if (last_digit > 9) {
-    //             last_digit = first_digit;
-    //         }
-    //         const calibration_value = intConcat(first_digit, last_digit);
-    //         // print("concatted: {d}\n", .{calibration_value});
-
-    //         acc += calibration_value;
-
-    //         first_digit = 1000;
-    //         last_digit = 1000;
-    //     }
-    // }
+    var iter = std.mem.splitScalar(u8, data, '\n');
+    while (iter.next()) |line| {
+        if (line.len == 0) continue;
+        var first_digit: ?u32 = null;
+        var last_digit: ?u32 = null;
+        for (0..line.len) |i| {
+            var digit = try parseDigitWords(line[i..]) orelse continue;
+            if (first_digit == null) {
+                first_digit = digit;
+            }
+            last_digit = digit;
+        }
+        const calibration_value = intConcat(first_digit, last_digit);
+        acc += calibration_value;
+    }
     return acc;
 }
 
 test "part 2" {
-    // const data = part_2_sample;
+    const data = part_2_sample;
 
-    // data
-    const res = try part2();
+    const res = try part2(data);
     try std.testing.expectEqual(@as(u64, 281), res);
 }
 
@@ -151,17 +131,25 @@ const digit_words = [_][]const u8{
     "nine",
 };
 
-/// returns number of characters parsed
-fn parseDigitWords(string: []const u8) u8 {
-    valid_nums = [9]usize{};
-    inline for (1..10) |i| {
-        valid_nums = i;
-    }
-    outer: for (string) |c| {
-        for (digit_words) |word| {
-            if (c != word[0]) {
+/// returns the parsed number if any, or else null
+fn parseDigitWords(string: []const u8) !?u32 {
+    return std.fmt.charToDigit(string[0], 10) catch {
+        for (digit_words, 1..10) |word, i| {
+            if (string.len < word.len) {
                 continue;
             }
+            if (std.mem.eql(u8, string[0..word.len], word)) {
+                return @truncate(i);
+            }
         }
+        return null;
+    };
+}
+
+test "parse digit word" {
+    const test_string = "oneight";
+
+    for (0..test_string.len) |i| {
+        _ = try parseDigitWords(test_string[i..test_string.len]) orelse continue;
     }
 }
