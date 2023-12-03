@@ -44,8 +44,8 @@ pub fn main() !void {
     const part_1_res = try part1(allocator, data);
     print("part 1: {d}\n", .{part_1_res}); // expect: 2348
 
-    // const part_2_res = try part2(allocator, data);
-    // print("part 2: {d}\n", .{part_2_res}); // expect: 2348
+    const part_2_res = try part2(allocator, data);
+    print("part 2: {d}\n", .{part_2_res}); // expect: 76008
 
     // // data
     // const part_2_res = try part2(data);
@@ -112,38 +112,51 @@ fn validGameMax(game: Game, max_draws: [3]Draw) bool {
     return true;
 }
 
-// fn part2(allocator: std.mem.Allocator, data: []const u8) !u64 {
-//     const games = try parseInput(allocator, data);
-//     defer {
-//         for (games.items) |game| {
-//             game.deinit();
-//         }
-//         games.deinit();
-//     }
+fn part2(allocator: std.mem.Allocator, data: []const u8) !u64 {
+    const games = try parseInput(allocator, data);
+    defer {
+        for (games.items) |game| {
+            game.deinit();
+        }
+        games.deinit();
+    }
 
-//     var acc: u64 = 0;
-//     for (games.items) |game| {
-//         if (validGameMax(game, max_draws)) {
-//             acc += game.id;
-//         }
-//         // print("id: {d}\n", .{game.id});
-//     }
-//     return acc;
-// }
+    var acc: u64 = 0;
+    for (games.items) |game| {
+        var max_red: u64 = 0;
+        var max_green: u64 = 0;
+        var max_blue: u64 = 0;
+        for (game.sets.items) |set| {
+            for (set.draws.items) |draw| {
+                print("count: {d}\n", .{draw.count});
+                switch (draw.color) {
+                    cube.red => {
+                        max_red = @max(max_red, draw.count);
+                    },
+                    cube.green => {
+                        max_green = @max(max_green, draw.count);
+                    },
+                    cube.blue => {
+                        max_blue = @max(max_blue, draw.count);
+                    },
+                }
+            }
+        }
+        const power = max_red * max_green * max_blue;
+        acc += power;
+    }
+    return acc;
+}
 
-// test "part2" {
-//     const allocator = std.testing.allocator;
-//     const part_2_sample_answer = 2286;
-//     const data = part_2_sample;
-//     const res = try part2(allocator, data);
-//     print("res: {d}\n", .{res});
-//     try std.testing.expectEqual(@as(u64, part_2_sample_answer), res);
-// }
+test "part2" {
+    const allocator = std.testing.allocator;
+    const part_2_sample_answer = 2286;
+    const data = part_2_sample;
+    const res = try part2(allocator, data);
+    print("res: {d}\n", .{res});
+    try std.testing.expectEqual(@as(u64, part_2_sample_answer), res);
+}
 
-// fn getMinCubes(game: Game) void {
-//     for (game.sets.items) |set| {
-//         _ = set;}
-// }
 // fn validGameMin(game: Game, min_draws: [3]Draw) bool {
 //     for (game.sets.items) |set| {
 //         for (set.draws.items) |draw| {
@@ -206,8 +219,7 @@ const Game = struct {
         const input = std.mem.trim(u8, raw_input, &std.ascii.whitespace);
         var parts = std.mem.splitScalar(u8, input, ':');
         var tmp = std.mem.splitScalar(u8, parts.first(), ' ');
-        const first = tmp.first();
-        print("first: {s}\n", .{first});
+        _ = tmp.first();
         const id_string = tmp.next().?;
         // print("id string: {s}\n", .{id_string});
         const id = try std.fmt.parseInt(u64, id_string, 10);
