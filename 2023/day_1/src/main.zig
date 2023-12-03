@@ -34,7 +34,7 @@ pub fn main() !void {
 
     // data
     const part_2_res = try part2(data);
-    print("part 2: {d}\n", .{part_2_res});
+    print("part 2: {d}\n", .{part_2_res}); // correct answer: 54504
 }
 
 pub fn readInput(allocator: std.mem.Allocator, file_name: []const u8) ![]const u8 {
